@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h3 class="mb-0">Histórico do Chat</h3>
+    <small class="text-muted">Sessão: <strong>{{ chat.title or ("Chat #" ~ chat.id) }}</strong></small>
+  </div>
+
+  <div class="d-flex align-items-center gap-2">
+    <span class="status-badge {{ 'status-online' if chat.is_active else 'status-offline' }}">
+      {{ 'Online' if chat.is_active else 'Encerrado' }}
+    </span>
+    <a class="btn btn-outline-secondary" href="{{ url_for('dashboard') }}">Voltar</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('logout') }}">Sair</a>
+  </div>
+</div>
+
+<div class="chat-container">
+  <div class="chat-header">
+    <h3 class="mb-1">{{ chat.title or ("Chat #" ~ chat.id) }}</h3>
+    <p class="mb-0">
+      <span class="opacity-75">Usuário:</span> {{ email }}
+      <span class="opacity-75">• Criado em:</span> {{ chat.created_at }}
+    </p>
+  </div>
+
+  <div class="chat-body" id="chatBody">
+    {# ---- Render server-side (lista de mensagens) ---- #}
+    {% for m in messages %}
+      <div class="message {{ 'user-message' if m.role == 'user' else 'bot-message' }}">
+        <div class="message-content">
+          {# Se você já salva HTML/Markdown, substitua por um renderer seguro. #}
+          {{ m.content | e | replace('\n','<br>') | safe }}
+        </div>
+        <div class="message-time">
+          {{ m.created_at }}
+        </div>
+      </div>
+    {% else %}
+      <div class="message bot-message">
+        <div class="message-content">
+          Nenhuma mensagem encontrada para este chat.
+        </div>
+      </div>
+    {% endfor %}
+
+    <div class="typing-indicator" id="typingIndicator">
+      <span class="me-2">Digitando</span>
+      <span class="typing-dots">
+        <span></span><span></span><span></span>
+      </span>
+    </div>
+  </div>
+
+  <div class="chat-input">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <small class="text-muted">Visualização somente leitura (histórico da sessão)</small>
+      <small class="token-counter">
+        {{ messages|length }} mensagens
+      </small>
+    </div>
+
+  </div>
+</div>
+
+{# --- Auto-scroll para a última mensagem --- #}
+<script>
+  (function () {
+    const el = document.getElementById('chatBody');
+    if (el) el.scrollTop = el.scrollHeight;
+  })();
+</script>
+
+{% endblock %}

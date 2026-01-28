@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chat com LLM - MLX</title>
+  
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body class="bg-light">
+
+  <nav class="navbar navbar-expand navbar-dark bg-dark mb-4">
+    <div class="container">
+      <span class="navbar-brand">
+        <i class="fas fa-robot me-2"></i>MLX Chat
+      </span>
+      
+      <div class="d-flex align-items-center text-white">
+        <small class="me-3 d-none d-md-block text-muted">Sessão #{{ chat_id }}</small>
+        <div class="d-flex gap-2">
+            <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('dashboard') }}">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </a>
+            <a class="btn btn-sm btn-outline-danger" href="{{ url_for('logout') }}">
+                <i class="fas fa-sign-out-alt"></i> Sair
+            </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container pb-5">
+    <div class="row justify-content-center">
+      <div class="col-lg-10 col-xl-8">
+        
+        <div class="card chat-container shadow-sm">
+          
+          <div class="chat-header p-3 border-bottom d-flex justify-content-between align-items-center bg-white rounded-top">
+            <div>
+              <h5 class="mb-0"><i class="fas fa-comments text-primary"></i> Assistente Virtual</h5>
+              <div class="d-flex align-items-center gap-2 mt-1">
+                <span id="api-status" class="badge bg-secondary rounded-pill">
+                  <i class="fas fa-circle-notch fa-spin"></i> Verificando API...
+                </span>
+                <span class="badge bg-info text-dark rounded-pill">
+                  <i class="fas fa-stream"></i> <span id="stream-mode">Streaming</span>
+                </span>
+              </div>
+            </div>
+            <button class="btn btn-sm btn-outline-danger" id="clear-btn">
+              <i class="fas fa-trash-alt"></i> Limpar
+            </button>
+          </div>
+
+          <div class="chat-body p-3 bg-light" id="chat-body" style="height: 500px; overflow-y: auto;">
+            <div class="message bot-message">
+              <div class="message-content">Olá! Como posso ajudar você hoje?</div>
+              <div class="message-time">Sistema</div>
+            </div>
+          </div>
+
+          <div class="chat-input p-3 bg-white border-top rounded-bottom">
+            
+            <div class="row g-2 mb-3">
+              <div class="col-md-6">
+                <label class="form-label small fw-bold text-muted"><i class="fas fa-microchip"></i> Modelo</label>
+                <select class="form-select form-select-sm" id="model-select">
+                  {% for model in models %}
+                  <option value="{{ model }}">{{ model }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-bold text-muted"><i class="fas fa-bolt"></i> Modo de Resposta</label>
+                <div class="btn-group w-100" role="group">
+                  <button type="button" class="btn btn-sm btn-outline-primary active" id="btn-stream-on">
+                    Streaming
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-primary" id="btn-stream-off">
+                    Instantâneo
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="input-group">
+              <textarea class="form-control" id="prompt-input" placeholder="Digite sua pergunta aqui..." rows="2" style="resize: none;"></textarea>
+              <button class="btn btn-primary px-4" id="send-btn">
+                <i class="fas fa-paper-plane"></i>
+              </button>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-2">
+              <div class="typing-indicator text-primary small" id="typing-indicator" style="display: none;">
+                <i class="fas fa-circle-notch fa-spin"></i> Processando...
+              </div>
+              <div class="text-muted small">
+                <span class="me-3 d-none d-sm-inline"><i class="fas fa-keyboard"></i> Shift+Enter quebra linha</span>
+                <span id="token-counter" class="fw-bold">Tokens: 0</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.CHAT_ID = {{ chat_id }};
+  </script>
+  
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+</body>
+</html>

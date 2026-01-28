@@ -1,1 +1,15 @@
-# Instruções para a aplicação de serviços do Frontend
+# Instruções
+
+## Dependências
+
+```bash
+uv add flask requests
+```
+
+## Execução
+
+```bash
+cd frontend
+uv sync
+uv run python app/main.py
+```
