@@ -1,5 +1,7 @@
 # Instruções
 
+Esta aplicação depende desta [aplicação backend](https://github.com/armandossrecife/mlx-openai-like-backend)
+
 ## Dependências
 
 ```bash
