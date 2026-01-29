@@ -237,7 +237,7 @@ def create_app():
         except Exception as e:
             return jsonify({"detail": str(e)}), 500
 
-    # -------- API: STREAM (proxy SSE com JWT) --------
+    ## -------- API: STREAM (proxy SSE com JWT) --------
     @app.post("/api/stream")
     def stream():
         red = require_login()
@@ -245,13 +245,17 @@ def create_app():
             return ("Unauthorized", 401)
 
         data = request.get_json(force=True) or {}
+        
+        # Lembre-se de manter a correção do campo 'resposta' que discutimos antes
         payload = {
             "model": data["model"],
             "prompt": data["prompt"],
             "chat_id": int(data["chat_id"]),
+            "resposta": "", 
             "stream": True,
         }
-
+        
+        # Função geradora para proxy do stream SSE
         def generate():
             with requests.post(
                 f"{BACKEND_URL}/generate",
@@ -261,23 +265,31 @@ def create_app():
                 timeout=300,
             ) as r:
                 if r.status_code != 200:
-                    yield f"data: {json.dumps({'type':'error','error':f'Backend error {r.status_code}: {r.text}'})}\n\n"
+                    error_msg = json.dumps({'type':'error','error':f'Backend error {r.status_code}: {r.text}'})
+                    yield f"data: {error_msg}\n\n"
                     return
 
-                for line in r.iter_lines(decode_unicode=True):
-                    if line is None:
-                        continue
-                    if line == "":
-                        yield "\n"
-                        continue
-                    yield line + "\n"
-
+                # CORREÇÃO: Decodifica e garante o \n\n
+                for line in r.iter_lines():
+                    if line:
+                        try:
+                            decoded_line = line.decode('utf-8')
+                            # iter_lines removeu a quebra de linha. 
+                            # Adicionamos \n\n para satisfazer o parser do JS (buffer.indexOf("\n\n"))
+                            yield decoded_line + "\n\n"
+                        except Exception:
+                            continue
+        
         return Response(
             stream_with_context(generate()),
             mimetype="text/event-stream",
-            headers={"Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no"},
+            headers={
+                "Cache-Control": "no-cache", 
+                "Connection": "keep-alive", 
+                "X-Accel-Buffering": "no"
+            },
         )
-
+    
     return app
 
 app = create_app()
