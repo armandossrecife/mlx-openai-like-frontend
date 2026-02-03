@@ -1,75 +1,126 @@
 {% extends "base.html" %}
+{% block title %}Histórico do Chat - MLX OpenAI Like{% endblock %}
 {% block content %}
-
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <div>
-    <h3 class="mb-0">Histórico do Chat</h3>
-    <small class="text-muted">Sessão: <strong>{{ chat.title or ("Chat #" ~ chat.id) }}</strong></small>
-  </div>
-
-  <div class="d-flex align-items-center gap-2">
-    <span class="status-badge {{ 'status-online' if chat.is_active else 'status-offline' }}">
-      {{ 'Online' if chat.is_active else 'Encerrado' }}
-    </span>
-    <a class="btn btn-outline-secondary" href="{{ url_for('dashboard') }}">Voltar</a>
-    <a class="btn btn-outline-secondary" href="{{ url_for('logout') }}">Sair</a>
-  </div>
+<div class="d-flex">
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="sidebar-brand d-flex align-items-center gap-2">
+            <div class="sidebar-brand-icon">
+                <i class="fas fa-robot"></i>
+            </div>
+            <span class="h5 fw-bold mb-0">MLX AI</span>
+        </div>
+        
+        <ul class="sidebar-nav list-unstyled px-3">
+            <li class="mb-1">
+                <a href="{{ url_for('dashboard') }}" class="nav-link">
+                    <i class="bi bi-speedometer2"></i>
+                    <span class="ms-2">Dashboard</span>
+                </a>
+            </li>
+            <li class="mb-1">
+                <a href="{{ url_for('chat_page', chat_id=chat.id) }}" class="nav-link">
+                    <i class="bi bi-chat-dots"></i>
+                    <span class="ms-2">Voltar para Chat</span>
+                </a>
+            </li>
+            <li class="mb-1">
+                <a href="{{ url_for('chat_history_page', chat_id=chat.id) }}" class="nav-link active">
+                    <i class="bi bi-file-earmark-text"></i>
+                    <span class="ms-2">Histórico</span>
+                </a>
+            </li>
+            <li class="mb-1 mt-3">
+                <a href="{{ url_for('logout') }}" class="nav-link">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span class="ms-2">Sair</span>
+                </a>
+            </li>
+        </ul>
+        
+        <div class="px-3 mt-4">
+            <div class="d-flex align-items-center gap-3 py-3 border-top border-secondary">
+                <div class="sidebar-brand-icon" style="width: 40px; height: 40px; font-size: 0.9rem; background: linear-gradient(135deg, #60a5fa, #3b82f6);">
+                    {{ email[0]|upper if email else 'U' }}
+                </div>
+                <div>
+                    <div class="fw-bold">{{ email }}</div>
+                    <div class="text-muted small">Usuário</div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="main-content flex-grow-1">
+        <div class="container-fluid">
+            <div class="mb-4">
+                <h1 class="h3 fw-bold">
+                    <i class="bi bi-file-earmark-text me-2"></i>Histórico do Chat
+                </h1>
+                <p class="text-muted">Visualização completa das mensagens</p>
+            </div>
+            
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-0">{{ chat.title or ("Chat #" ~ chat.id) }}</h5>
+                            <small class="text-muted">
+                                Criado em: {{ chat.created_at }}
+                            </small>
+                        </div>
+                        <span class="status-badge {{ 'status-online' if chat.is_active else 'status-offline' }}">
+                            {{ 'Ativo' if chat.is_active else 'Inativo' }}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="card-body p-0">
+                    <div class="chat-body" id="chat-body" style="height: calc(100vh - 300px);">
+                        {% for m in messages %}
+                        <div class="message {{ 'user-message' if m.role == 'user' else 'bot-message' }}">
+                            <div class="message-content">
+                                {{ m.content | safe }}
+                            </div>
+                            <span class="message-time">
+                                {{ m.role|capitalize }} • {{ m.created_at }}
+                            </span>
+                        </div>
+                        {% else %}
+                        <div class="message bot-message">
+                            <div class="message-content">
+                                Nenhuma mensagem encontrada para este chat.
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="card-footer bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            <i class="bi bi-chat-dots me-1"></i>{{ messages|length }} mensagens
+                        </small>
+                        <div>
+                            <a href="{{ url_for('chat_page', chat_id=chat.id) }}" class="btn btn-primary btn-sm">
+                                <i class="bi bi-arrow-left me-1"></i>Voltar para Chat
+                            </a>
+                            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-sm ms-2">
+                                <i class="bi bi-house me-1"></i>Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
 </div>
 
-<div class="chat-container">
-  <div class="chat-header">
-    <h3 class="mb-1">{{ chat.title or ("Chat #" ~ chat.id) }}</h3>
-    <p class="mb-0">
-      <span class="opacity-75">Usuário:</span> {{ email }}
-      <span class="opacity-75">• Criado em:</span> {{ chat.created_at }}
-    </p>
-  </div>
-
-  <div class="chat-body" id="chatBody">
-    {# ---- Render server-side (lista de mensagens) ---- #}
-    {% for m in messages %}
-      <div class="message {{ 'user-message' if m.role == 'user' else 'bot-message' }}">
-        <div class="message-content">
-          {# Se você já salva HTML/Markdown, substitua por um renderer seguro. #}
-          {{ m.content | e | replace('\n','<br>') | safe }}
-        </div>
-        <div class="message-time">
-          {{ m.created_at }}
-        </div>
-      </div>
-    {% else %}
-      <div class="message bot-message">
-        <div class="message-content">
-          Nenhuma mensagem encontrada para este chat.
-        </div>
-      </div>
-    {% endfor %}
-
-    <div class="typing-indicator" id="typingIndicator">
-      <span class="me-2">Digitando</span>
-      <span class="typing-dots">
-        <span></span><span></span><span></span>
-      </span>
-    </div>
-  </div>
-
-  <div class="chat-input">
-    <div class="d-flex justify-content-between align-items-center mb-2">
-      <small class="text-muted">Visualização somente leitura (histórico da sessão)</small>
-      <small class="token-counter">
-        {{ messages|length }} mensagens
-      </small>
-    </div>
-
-  </div>
-</div>
-
-{# --- Auto-scroll para a última mensagem --- #}
 <script>
-  (function () {
-    const el = document.getElementById('chatBody');
+(function () {
+    const el = document.getElementById('chat-body');
     if (el) el.scrollTop = el.scrollHeight;
-  })();
+})();
 </script>
-
 {% endblock %}

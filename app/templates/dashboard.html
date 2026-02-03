@@ -1,32 +1,213 @@
 {% extends "base.html" %}
+{% block title %}Dashboard - MLX OpenAI Like{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center">
-  <h3>Dashboard</h3>
-  <span class="text-muted">Bem-vindo, {{ email }}</span>
-  <a class="btn btn-outline-secondary" href="{{ url_for('logout') }}">Sair</a>
+<div class="d-flex">
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="sidebar-brand d-flex align-items-center gap-2">
+            <div class="sidebar-brand-icon">
+                <i class="fas fa-robot"></i>
+            </div>
+            <span class="h5 fw-bold mb-0">MLX AI</span>
+        </div>
+        
+        <ul class="sidebar-nav list-unstyled px-3">
+            <li class="mb-1">
+                <a href="{{ url_for('dashboard') }}" class="nav-link active">
+                    <i class="bi bi-speedometer2"></i>
+                    <span class="ms-2">Dashboard</span>
+                </a>
+            </li>
+            <li class="mb-1">
+                <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#newChatModal">
+                    <i class="bi bi-chat-dots"></i>
+                    <span class="ms-2">Novo Chat</span>
+                </a>
+            </li>
+            <li class="mb-1 mt-3">
+                <a href="{{ url_for('logout') }}" class="nav-link">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span class="ms-2">Sair</span>
+                </a>
+            </li>
+        </ul>
+        
+        <div class="px-3 mt-4">
+            <div class="d-flex align-items-center gap-3 py-3 border-top border-secondary">
+                <div class="sidebar-brand-icon" style="width: 40px; height: 40px; font-size: 0.9rem; background: linear-gradient(135deg, #60a5fa, #3b82f6);">
+                    {{ email[0]|upper if email else 'U' }}
+                </div>
+                <div>
+                    <div class="fw-bold">{{ email }}</div>
+                    <div class="text-muted small">Usuário</div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="main-content flex-grow-1">
+        <div class="container-fluid">
+            <div class="mb-4">
+                <h1 class="h3 fw-bold">Dashboard</h1>
+                <p class="text-muted">Bem-vindo! Aqui está sua visão geral.</p>
+            </div>
+            
+            <!-- Stats Cards -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-4">
+                    <div class="card stat-card border-0">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="text-muted small fw-semibold">CHATS CRIADOS</div>
+                                    <div class="h2 fw-bold text-primary mt-1">{{ chats|length }}</div>
+                                </div>
+                                <div class="stat-icon">💬</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card stat-card border-0">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="text-muted small fw-semibold">STATUS API</div>
+                                    <div class="h2 fw-bold text-success mt-1" id="api-status-badge">
+                                        <i class="fas fa-circle-notch fa-spin"></i> Verificando...
+                                    </div>
+                                </div>
+                                <div class="stat-icon">🔌</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card stat-card border-0">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="text-muted small fw-semibold">MODELOS DISPONÍVEIS</div>
+                                    <div class="h2 fw-bold text-warning mt-1" id="models-count">-</div>
+                                </div>
+                                <div class="stat-icon">🧠</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Chats -->
+            <h2 class="h5 fw-bold mb-3 mt-4">Seus Chats</h2>
+            {% if chats %}
+            <div class="row g-3">
+                {% for chat in chats %}
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="card-title mb-1">{{ chat.title or ("Chat #" ~ chat.id) }}</h5>
+                                <small class="text-muted">
+                                    <i class="bi bi-clock"></i> {{ chat.created_at }}
+                                </small>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <a href="{{ url_for('chat_page', chat_id=chat.id) }}" class="btn btn-primary">
+                                    <i class="bi bi-chat-dots me-1"></i>Continuar
+                                </a>
+                                <a href="{{ url_for('chat_history_page', chat_id=chat.id) }}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-eye me-1"></i>Ver Histórico
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="card border-0 shadow-sm text-center py-5">
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="sidebar-brand-icon mx-auto" style="width: 80px; height: 80px; font-size: 2rem;">
+                            💬
+                        </div>
+                    </div>
+                    <h4 class="fw-bold mb-2">Nenhum chat encontrado</h4>
+                    <p class="text-muted mb-4">Crie um novo chat para começar</p>
+                    <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#newChatModal" style="background: var(--primary-gradient);">
+                        <i class="bi bi-plus-circle me-2"></i>Novo Chat
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </main>
 </div>
 
-<div class="card mt-3">
-  <div class="card-body">
-    <form method="post" action="{{ url_for('create_chat') }}" class="d-flex gap-2">
-      <input class="form-control" name="title" placeholder="Título do chat (opcional)">
-      <button class="btn btn-primary">Novo Chat</button>
-    </form>
-  </div>
+<!-- Modal Novo Chat -->
+<div class="modal fade" id="newChatModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Criar Novo Chat</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{{ url_for('create_chat') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Título do Chat (opcional)</label>
+                        <input class="form-control" name="title" placeholder="Ex: Análise de dados, Suporte técnico...">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Criar Chat</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
-<h5 class="mt-4">Meus chats</h5>
-<ul class="list-group">
-  {% for c in chats %}
-    <li class="list-group-item d-flex justify-content-between align-items-center">
-      <div>
-        <strong>{{ c.title }}</strong><br>
-        <small class="text-muted">{{ c.created_at }}</small>
-      </div>
-      <a class="btn btn-sm btn-success" href="{{ url_for('chat_history_page', chat_id=c.id) }}">Abrir</a>
-    </li>
-  {% else %}
-    <li class="list-group-item">Nenhum chat ainda.</li>
-  {% endfor %}
-</ul>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Check API status
+    async function checkApiStatus() {
+        try {
+            const response = await fetch('/health');
+            const data = await response.json();
+            
+            const badge = document.getElementById('api-status-badge');
+            if (data.status === 'healthy') {
+                badge.innerHTML = '<i class="fas fa-circle text-success"></i> Online';
+                badge.className = 'h2 fw-bold text-success mt-1';
+            } else {
+                badge.innerHTML = '<i class="fas fa-circle text-danger"></i> Offline';
+                badge.className = 'h2 fw-bold text-danger mt-1';
+            }
+        } catch (error) {
+            document.getElementById('api-status-badge').innerHTML = '<i class="fas fa-circle text-danger"></i> Offline';
+        }
+    }
+    
+    // Get models count
+    async function getModelsCount() {
+        try {
+            const response = await fetch('/api/models-count');
+            const data = await response.json();
+            document.getElementById('models-count').textContent = data.count;
+        } catch (error) {
+            console.error('Erro ao buscar modelos:', error);
+        }
+    }
+    
+    checkApiStatus();
+    getModelsCount();
+    
+    // Auto-check every 30 seconds
+    setInterval(checkApiStatus, 30000);
+});
+</script>
 {% endblock %}
