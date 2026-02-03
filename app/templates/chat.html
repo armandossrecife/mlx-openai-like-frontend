@@ -1,119 +1,140 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chat com LLM - MLX</title>
-  
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-</head>
-<body class="bg-light">
-
-  <nav class="navbar navbar-expand navbar-dark bg-dark mb-4">
-    <div class="container">
-      <span class="navbar-brand">
-        <i class="fas fa-robot me-2"></i>MLX Chat
-      </span>
-      
-      <div class="d-flex align-items-center text-white">
-        <small class="me-3 d-none d-md-block text-muted">Sessão #{{ chat_id }}</small>
-        <div class="d-flex gap-2">
-            <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('dashboard') }}">
-                <i class="fas fa-arrow-left"></i> Voltar
-            </a>
-            <a class="btn btn-sm btn-outline-danger" href="{{ url_for('logout') }}">
-                <i class="fas fa-sign-out-alt"></i> Sair
-            </a>
+{% extends "base.html" %}
+{% block title %}Chat #{{ chat_id }} - MLX OpenAI Like{% endblock %}
+{% block content %}
+<div class="d-flex">
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="sidebar-brand d-flex align-items-center gap-2">
+            <div class="sidebar-brand-icon">
+                <i class="fas fa-robot"></i>
+            </div>
+            <span class="h5 fw-bold mb-0">MLX AI</span>
         </div>
-      </div>
-    </div>
-  </nav>
-
-  <div class="container pb-5">
-    <div class="row justify-content-center">
-      <div class="col-lg-10 col-xl-8">
         
-        <div class="card chat-container shadow-sm">
-          
-          <div class="chat-header p-3 border-bottom d-flex justify-content-between align-items-center bg-white rounded-top">
-            <div>
-              <h5 class="mb-0"><i class="fas fa-comments text-primary"></i> Assistente Virtual</h5>
-              <div class="d-flex align-items-center gap-2 mt-1">
-                <span id="api-status" class="badge bg-secondary rounded-pill">
-                  <i class="fas fa-circle-notch fa-spin"></i> Verificando API...
-                </span>
-                <span class="badge bg-info text-dark rounded-pill">
-                  <i class="fas fa-stream"></i> <span id="stream-mode">Streaming</span>
-                </span>
-              </div>
-            </div>
-            <button class="btn btn-sm btn-outline-danger" id="clear-btn">
-              <i class="fas fa-trash-alt"></i> Limpar
-            </button>
-          </div>
-
-          <div class="chat-body p-3 bg-light" id="chat-body" style="height: 500px; overflow-y: auto;">
-            <div class="message bot-message">
-              <div class="message-content">Olá! Como posso ajudar você hoje?</div>
-              <div class="message-time">Sistema</div>
-            </div>
-          </div>
-
-          <div class="chat-input p-3 bg-white border-top rounded-bottom">
-            
-            <div class="row g-2 mb-3">
-              <div class="col-md-6">
-                <label class="form-label small fw-bold text-muted"><i class="fas fa-microchip"></i> Modelo</label>
-                <select class="form-select form-select-sm" id="model-select">
-                  {% for model in models %}
-                  <option value="{{ model }}">{{ model }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label small fw-bold text-muted"><i class="fas fa-bolt"></i> Modo de Resposta</label>
-                <div class="btn-group w-100" role="group">
-                  <button type="button" class="btn btn-sm btn-outline-primary active" id="btn-stream-on">
-                    Streaming
-                  </button>
-                  <button type="button" class="btn btn-sm btn-outline-primary" id="btn-stream-off">
-                    Instantâneo
-                  </button>
+        <ul class="sidebar-nav list-unstyled px-3">
+            <li class="mb-1">
+                <a href="{{ url_for('dashboard') }}" class="nav-link">
+                    <i class="bi bi-speedometer2"></i>
+                    <span class="ms-2">Dashboard</span>
+                </a>
+            </li>
+            <li class="mb-1">
+                <a href="{{ url_for('chat_page', chat_id=chat_id) }}" class="nav-link active">
+                    <i class="bi bi-chat-dots"></i>
+                    <span class="ms-2">Chat Atual</span>
+                </a>
+            </li>
+            <li class="mb-1">
+                <a href="{{ url_for('chat_history_page', chat_id=chat_id) }}" class="nav-link">
+                    <i class="bi bi-file-earmark-text"></i>
+                    <span class="ms-2">Histórico</span>
+                </a>
+            </li>
+            <li class="mb-1 mt-3">
+                <a href="{{ url_for('logout') }}" class="nav-link">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span class="ms-2">Sair</span>
+                </a>
+            </li>
+        </ul>
+        
+        <div class="px-3 mt-4">
+            <div class="d-flex align-items-center gap-3 py-3 border-top border-secondary">
+                <div class="sidebar-brand-icon" style="width: 40px; height: 40px; font-size: 0.9rem; background: linear-gradient(135deg, #60a5fa, #3b82f6);">
+                    {{ email[0]|upper if email else 'U' }}
                 </div>
-              </div>
+                <div>
+                    <div class="fw-bold">Sessão #{{ chat_id }}</div>
+                    <div class="text-muted small">{{ email }}</div>
+                </div>
             </div>
-
-            <div class="input-group">
-              <textarea class="form-control" id="prompt-input" placeholder="Digite sua pergunta aqui..." rows="2" style="resize: none;"></textarea>
-              <button class="btn btn-primary px-4" id="send-btn">
-                <i class="fas fa-paper-plane"></i>
-              </button>
-            </div>
-
-            <div class="d-flex justify-content-between align-items-center mt-2">
-              <div class="typing-indicator text-primary small" id="typing-indicator" style="display: none;">
-                <i class="fas fa-circle-notch fa-spin"></i> Processando...
-              </div>
-              <div class="text-muted small">
-                <span class="me-3 d-none d-sm-inline"><i class="fas fa-keyboard"></i> Shift+Enter quebra linha</span>
-                <span id="token-counter" class="fw-bold">Tokens: 0</span>
-              </div>
-            </div>
-
-          </div>
         </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="main-content flex-grow-1">
+        <div class="container-fluid">
+            <div class="chat-container">
+                <div class="chat-header">
+                    <h2 class="h4 fw-bold mb-1">Assistente MLX</h2>
+                    <p class="mb-0 opacity-90">Converse com nosso assistente inteligente</p>
+                    
+                    <div class="chat-status">
+                        <span class="status-dot"></span>
+                        <span id="api-status" class="status-badge status-offline">
+                            <i class="fas fa-circle-notch fa-spin"></i> Verificando...
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="chat-body" id="chat-body">
+                    <div class="message bot-message">
+                        <div class="message-content">
+                            Olá! Como posso ajudar você hoje?
+                        </div>
+                        <span class="message-time">Sistema</span>
+                    </div>
+                    
+                    <div class="typing-indicator" id="typing-indicator">
+                        <div class="typing-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="chat-input">
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">
+                                <i class="bi bi-cpu me-1"></i>Modelo
+                            </label>
+                            <select class="form-select form-select-sm" id="model-select" style="border-radius: 8px;">
+                                {% for model in models %}
+                                <option value="{{ model }}">{{ model }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">
+                                <i class="bi bi-broadcast me-1"></i>Modo de Resposta
+                            </label>
+                            <div class="btn-group w-100" role="group">
+                                <button type="button" class="btn btn-sm btn-outline-primary active" id="btn-stream-on">
+                                    <i class="bi bi-arrow-repeat"></i> Streaming
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-primary" id="btn-stream-off">
+                                    <i class="bi bi-lightning"></i> Instantâneo
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <textarea class="form-control input-field" id="prompt-input" placeholder="Digite sua mensagem aqui..." rows="2" style="resize: none;"></textarea>
+                        <button class="btn btn-primary" id="send-btn" type="button" style="background: var(--primary-gradient);">
+                            <i class="bi bi-send-fill"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <div class="text-muted small">
+                            <span class="me-3"><i class="bi bi-keyboard"></i> Shift+Enter para quebrar linha</span>
+                        </div>
+                        <div class="token-counter">
+                            <span id="token-counter">Tokens: 0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
 
-      </div>
-    </div>
-  </div>
-
-  <script>
-    window.CHAT_ID = {{ chat_id }};
-  </script>
-  
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
-</body>
-</html>
+<script>
+window.CHAT_ID = {{ chat_id }};
+</script>
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+{% endblock %}
