@@ -3,6 +3,7 @@ import json
 import requests
 from flask import Flask, render_template, request, redirect, url_for, session, flash, Response, stream_with_context, jsonify
 from datetime import datetime
+from typing import List
 
 def create_app():
     app = Flask(__name__)
@@ -38,14 +39,39 @@ def create_app():
     # -------- MODELS COUNT (para dashboard) --------
     @app.get("/api/models-count")
     def models_count():
+        red = require_login()
+        if red:
+            return red
+        # Busca modelos disponíveis do backend
+        models: List[str] = []
         try:
-            r = requests.get(f"{BACKEND_URL}/models", timeout=10)
-            if r.status_code == 200:
-                models = r.json().get("models", [])
-                return {"count": len(models)}
-        except Exception:
-            pass
-        return {"count": 0}
+            mr = requests.get(f"{BACKEND_URL}/models", headers=auth_headers(), timeout=5)
+            
+            if mr.status_code == 200:
+                # Estrutura da resposta OpenAI: {"object": "list", "data": [...]}
+                response_data = mr.json()
+                models = [model["id"] for model in response_data.get("data", [])]
+                
+                if not models:
+                    print("Backend retornou lista de modelos vazia")
+                    return {"count": 0}
+            else:
+                print(f"Erro ao buscar modelos: HTTP {mr.status_code} - {mr.text}")
+                raise Exception(f"HTTP {mr.status_code} - {mr.text}")                
+                
+        except requests.exceptions.Timeout:
+            print("Timeout ao buscar modelos do backend")
+        except requests.exceptions.ConnectionError:
+            print("Erro de conexão ao buscar modelos do backend")
+        except Exception as e:
+            print(f"Erro inesperado ao buscar modelos: {str(e)}")
+        
+        # Fallback inteligente se não conseguir listar modelos
+        if not models:
+            print("Usando modelo fallback")
+            models = ["llama3.2:3b"]  # Modelo padrão mais comum no Ollama
+        return {"count": len(models)}
+                
 
     # -------- AUTH PAGES --------
     @app.get("/")
